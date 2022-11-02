@@ -39,46 +39,49 @@ void UTerrainComponent::GenerateLandmass()
 		TArray<uint16> HeightData;
 		TArray<uint8> Pixels;
 
-		HeightData.Reserve(SampleRect.Width() * SampleRect.Height());
-		Pixels.Reserve(SampleRect.Width() * SampleRect.Height() * 4);
+		HeightData.Init(0, SampleRect.Width() * SampleRect.Height());
+		Pixels.Init(0, SampleRect.Width() * SampleRect.Height() * 4);
 
 		//UE_LOG(LogTemp, Warning, TEXT("Width: %d    || Height: %d"), SampleRect.Width(), SampleRect.Height());
+		
 
-		for (float i = 0; i < SampleRect.Height(); i++)
+		ParallelFor(SampleRect.Width() * SampleRect.Height(), [&](int32 F)
 		{
-			for (float j = 0; j < SampleRect.Width(); j++)
+			int32 i = F % SampleRect.Width();
+			int32 j = F / SampleRect.Height();
+		
+			float X = i / static_cast<float>(SampleRect.Width());
+			float Y = j / static_cast<float>(SampleRect.Height());
+
+			float NoiseValue = 0;
+			float AmplitudeSum = 0;
+			float OctavePersistence = 1;
+			float OctaveFrequency = Frequency;
+			
+			
+			for (int k = 1; k <= Octaves; k++)
 			{
-				float X = j / static_cast<float>(SampleRect.Width());
-				float Y = i / static_cast<float>(SampleRect.Height());
+				float PerlinValue = FMath::GetMappedRangeValueClamped(FFloatRange(-1, 1), FFloatRange(0, 1),FMath::PerlinNoise2D(FVector2D(OctaveFrequency * X, OctaveFrequency * Y)));
 
-				float NoiseValue = j + ((int)i % SampleRect.Width());
-				float OctavePersistence = 1;
-				float OctaveFrequency = Frequency;
+				NoiseValue += PerlinValue * OctavePersistence;
+				AmplitudeSum += OctavePersistence;
 				
-				for (int k = 1; k <= Octaves; k++)
-				{
-					float PerlinValue = FMath::GetMappedRangeValueClamped(FFloatRange(-1, 1), FFloatRange(0, 1),FMath::PerlinNoise2D(FVector2D(OctaveFrequency * X, OctaveFrequency * Y)));
-
-					NoiseValue += PerlinValue * OctavePersistence;
-					
-					OctaveFrequency *= FMath::Pow(Lacunarity, k);
-					OctavePersistence *= FMath::Pow(Persistence, k);
-				}
-				
-				uint16 HeightValue = FMath::Clamp(FMath::GetRangeValue(FFloatRange(0, Elevation), NoiseValue), 0, UINT16_MAX);
-				UE_LOG(LogTemp, Warning, TEXT("X: %f  |   Y: %f       | NoiseValue: %f	"), X, Y, NoiseValue);
-
-				HeightData.Add(HeightValue);
-
-				FColor Color = FLinearColor::LerpUsingHSV(FLinearColor(FColor::Black),
-					FLinearColor(FColor::White), NoiseValue).ToFColor(true);
-
-				Pixels.Add(Color.R);
-				Pixels.Add(Color.G);
-				Pixels.Add(Color.B);
-				Pixels.Add(Color.A);
+				OctaveFrequency *= FMath::Pow(Persistence, k);
+				OctavePersistence *= FMath::Pow(Persistence, -k);
 			}
-		}
+			
+			//UE_LOG(LogTemp, Warning, TEXT("X: %f  |   Y: %f       | NoiseValue: %f	"), X, Y, (NoiseValue / AmplitudeSum));
+			
+			HeightData[F] =  FMath::Clamp(FMath::GetRangeValue(FFloatRange(0, Elevation), (NoiseValue / AmplitudeSum)), 0, UINT16_MAX);
+
+			FColor Color = FLinearColor::LerpUsingHSV(FLinearColor(FColor::Black),
+				FLinearColor(FColor::White), (NoiseValue / AmplitudeSum)).ToFColor(true);
+
+			Pixels[(F * 4) + 0] = Color.R;
+			Pixels[(F * 4) + 1] = Color.G;
+			Pixels[(F * 4) + 2] = Color.B;
+			Pixels[(F * 4) + 3] = Color.A;
+		});
 
 
 		//Save height to the texture
@@ -86,11 +89,8 @@ void UTerrainComponent::GenerateLandmass()
 		UE_LOG(LogTemp, Warning, TEXT("Writing data to texture %s"), (bSaved ? TEXT("finished with success") : TEXT("failed")));
 		
 		//Apply height to the landscape
-		FHeightmapAccessor<false> HeightmapAccessor(LandscapeInfo);
+		FHeightmapAccessor<true> HeightmapAccessor(LandscapeInfo);
 		HeightmapAccessor.SetData(MinX, MinY, MaxX, MaxY, HeightData.GetData());
-
-		//const FVector PreviousLocation = Landscape->GetActorLocation();
-		//Landscape->SetActorLocation(FVector(PreviousLocation.X, PreviousLocation.Y, PreviousLocation.Z * LANDSCAPE_ZSCALE));
 	}
 }
 
@@ -146,12 +146,6 @@ bool UTerrainComponent::WriteHeightDataToTexture(TArray<uint8> HeightData, FIntR
 	return UPackage::SavePackage(Package, NewTexture, *PackageFileName, SavePackageArgs);
 }
 
-void UTerrainComponent::ClampHeightValue(float& NoiseValue)
-{
-	
-}
-
-
 #if WITH_EDITOR
 void UTerrainComponent::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
@@ -161,6 +155,7 @@ void UTerrainComponent::PostEditChangeProperty(FPropertyChangedEvent& PropertyCh
 	{
 		if (PropertyChangedEvent.Property->GetFName() == FName("Frequency") ||
 			PropertyChangedEvent.Property->GetFName() == FName("Octaves") ||
+			PropertyChangedEvent.Property->GetFName() == FName("Persistence") ||
 			PropertyChangedEvent.Property->GetFName() == FName("Elevation"))
 		{
 			GenerateLandmass();

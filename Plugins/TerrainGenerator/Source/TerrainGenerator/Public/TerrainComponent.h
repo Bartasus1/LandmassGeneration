@@ -25,13 +25,9 @@ public:
 
 	UPROPERTY(EditAnywhere, meta=(UIMin = 0.1, UIMax = 10.0))
 	float Frequency = 1.0;
-
-	UPROPERTY(EditAnywhere, meta=(UIMin = 1, UIMax = 10.0))
-	float Lacunarity = 2.0;
-
-	UPROPERTY(EditAnywhere, meta=(UIMin = 0, UIMax = 1.0))
+	
+	UPROPERTY(EditAnywhere, meta=(UIMin = 1.0, UIMax = 4.0, DisplayName = "Lacunarity / (1/Persistence)"))
 	float Persistence = 0.5;
-
 
 	UPROPERTY(EditAnywhere, meta=(UIMin = 1, UIMax = 8))
 	uint16 Octaves = 1;
@@ -44,8 +40,6 @@ protected:
 	virtual void BeginPlay() override;
 
 	bool WriteHeightDataToTexture(TArray<uint8> HeightData, FIntRect SampleRect);
-
-	void ClampHeightValue(float &NoiseValue);
 
 #if WITH_EDITOR
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
