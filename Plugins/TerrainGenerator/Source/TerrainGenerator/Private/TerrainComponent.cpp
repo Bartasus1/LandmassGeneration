@@ -32,8 +32,6 @@ void UTerrainComponent::GenerateLandmass()
 
 		LandscapeInfo->GetLandscapeExtent(MinX, MinY, MaxX, MaxY);
 
-		//UE_LOG(LogTemp, Warning, TEXT("Min: %d, %d    || Max: %d, %d"), MinX, MinY, MaxX, MaxY);
-
 		FIntRect SampleRect = FIntRect(MinX, MinY, 1 + MaxX - MinX, 1 + MaxY - MinY);
 
 		TArray<uint16> HeightData;
@@ -42,9 +40,7 @@ void UTerrainComponent::GenerateLandmass()
 		HeightData.Init(0, SampleRect.Width() * SampleRect.Height());
 		Pixels.Init(0, SampleRect.Width() * SampleRect.Height() * 4);
 
-		//UE_LOG(LogTemp, Warning, TEXT("Width: %d    || Height: %d"), SampleRect.Width(), SampleRect.Height());
 		
-
 		ParallelFor(SampleRect.Width() * SampleRect.Height(), [&](int32 F)
 		{
 			int32 i = F % SampleRect.Width();
@@ -55,22 +51,21 @@ void UTerrainComponent::GenerateLandmass()
 
 			float NoiseValue = 0;
 			float AmplitudeSum = 0;
-			float OctavePersistence = 1;
-			float OctaveFrequency = Frequency;
 			
 			
-			for (int k = 1; k <= Octaves; k++)
+			for (int k = 0; k < Octaves; k++)
 			{
-				float PerlinValue = FMath::GetMappedRangeValueClamped(FFloatRange(-1, 1), FFloatRange(0, 1),FMath::PerlinNoise2D(FVector2D(OctaveFrequency * X, OctaveFrequency * Y)));
+				const float Multiplier =  FMath::Pow(Persistence, k);
 
-				NoiseValue += PerlinValue * OctavePersistence;
-				AmplitudeSum += OctavePersistence;
+				const float PerlinValue = FMath::GetMappedRangeValueClamped(FFloatRange(-1, 1), FFloatRange(0, 1),FMath::PerlinNoise2D(FVector2D((Frequency * Multiplier) * X, (Frequency * Multiplier) * Y)));
+
+				NoiseValue += PerlinValue * (1 / Multiplier);
+				AmplitudeSum += (1 / Multiplier);
 				
-				OctaveFrequency *= FMath::Pow(Persistence, k);
-				OctavePersistence *= FMath::Pow(Persistence, -k);
 			}
 			
-			//UE_LOG(LogTemp, Warning, TEXT("X: %f  |   Y: %f       | NoiseValue: %f	"), X, Y, (NoiseValue / AmplitudeSum));
+			if(bWriteToLog)
+				UE_LOG(LogTemp, Warning, TEXT("X: %f  |   Y: %f       | NoiseValue: %f	"), X, Y, (NoiseValue / AmplitudeSum));
 			
 			HeightData[F] =  FMath::Clamp(FMath::GetRangeValue(FFloatRange(0, Elevation), (NoiseValue / AmplitudeSum)), 0, UINT16_MAX);
 

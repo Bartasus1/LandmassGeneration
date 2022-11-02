@@ -23,6 +23,9 @@ public:
 	UPROPERTY(EditAnywhere)
 	bool bUpdateOnValuesChanged = false;
 
+	UPROPERTY(EditAnywhere, AdvancedDisplay, meta=(EditCondition="!bUpdateOnValuesChanged"))
+	bool bWriteToLog = false;
+
 	UPROPERTY(EditAnywhere, meta=(UIMin = 0.1, UIMax = 10.0))
 	float Frequency = 1.0;
 	
