@@ -4,6 +4,7 @@
 #include "TerrainComponent.h"
 
 #include "Landscape.h"
+#include "LandscapeDataAccess.h"
 #include "LandscapeEdit.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "Kismet/GameplayStatics.h"
@@ -31,7 +32,7 @@ void UTerrainComponent::GenerateLandmass()
 
 		LandscapeInfo->GetLandscapeExtent(MinX, MinY, MaxX, MaxY);
 
-		UE_LOG(LogTemp, Warning, TEXT("Min: %d, %d    || Max: %d, %d"), MinX, MinY, MaxX, MaxY);
+		//UE_LOG(LogTemp, Warning, TEXT("Min: %d, %d    || Max: %d, %d"), MinX, MinY, MaxX, MaxY);
 
 		FIntRect SampleRect = FIntRect(MinX, MinY, 1 + MaxX - MinX, 1 + MaxY - MinY);
 
@@ -41,37 +42,37 @@ void UTerrainComponent::GenerateLandmass()
 		HeightData.Reserve(SampleRect.Width() * SampleRect.Height());
 		Pixels.Reserve(SampleRect.Width() * SampleRect.Height() * 4);
 
-		UE_LOG(LogTemp, Warning, TEXT("Width: %d    || Height: %d"), SampleRect.Width(), SampleRect.Height());
+		//UE_LOG(LogTemp, Warning, TEXT("Width: %d    || Height: %d"), SampleRect.Width(), SampleRect.Height());
 
 		for (float i = 0; i < SampleRect.Height(); i++)
 		{
 			for (float j = 0; j < SampleRect.Width(); j++)
 			{
-				float X = j / ((float)SampleRect.Width());
-				float Y = i / ((float)SampleRect.Height());
+				float X = j / static_cast<float>(SampleRect.Width());
+				float Y = i / static_cast<float>(SampleRect.Height());
 
-				float PerlinValue = 1;
-				float OctavesScale = 1;
-				float TempFrequency = Frequency;
-
+				float NoiseValue = j + ((int)i % SampleRect.Width());
+				float OctavePersistence = 1;
+				float OctaveFrequency = Frequency;
+				
 				for (int k = 1; k <= Octaves; k++)
 				{
-					float NoiseValue = FMath::PerlinNoise2D(FVector2D(TempFrequency * X, TempFrequency * Y));
-					//UE_LOG(LogTemp, Warning, TEXT("X: %f  |   Y: %f       | NoiseValue: %f"), X, Y, NoiseValue);
-					PerlinValue += NoiseValue * OctavesScale;
+					float PerlinValue = FMath::GetMappedRangeValueClamped(FFloatRange(-1, 1), FFloatRange(0, 1),FMath::PerlinNoise2D(FVector2D(OctaveFrequency * X, OctaveFrequency * Y)));
 
-					TempFrequency *= 2;
-					OctavesScale /= 2;
+					NoiseValue += PerlinValue * OctavePersistence;
+					
+					OctaveFrequency *= FMath::Pow(Lacunarity, k);
+					OctavePersistence *= FMath::Pow(Persistence, k);
 				}
-
-				uint16 HeightValue = PerlinValue * Elevation;
+				
+				uint16 HeightValue = FMath::Clamp(FMath::GetRangeValue(FFloatRange(0, Elevation), NoiseValue), 0, UINT16_MAX);
+				UE_LOG(LogTemp, Warning, TEXT("X: %f  |   Y: %f       | NoiseValue: %f	"), X, Y, NoiseValue);
 
 				HeightData.Add(HeightValue);
 
 				FColor Color = FLinearColor::LerpUsingHSV(FLinearColor(FColor::Black),
-					FLinearColor(0.6,0.6,0.6), PerlinValue).ToFColor(true);
-				//UE_LOG(LogTemp, Warning, TEXT("Color R: %d, G: %d, B: %d, A: %d"), Color.R, Color.G, Color.B, Color.A);
-				//UE_LOG(LogTemp, Warning, TEXT("PerlinValue: %f"), PerlinValue);
+					FLinearColor(FColor::White), NoiseValue).ToFColor(true);
+
 				Pixels.Add(Color.R);
 				Pixels.Add(Color.G);
 				Pixels.Add(Color.B);
@@ -79,13 +80,17 @@ void UTerrainComponent::GenerateLandmass()
 			}
 		}
 
+
+		//Save height to the texture
 		bool bSaved = WriteHeightDataToTexture(Pixels, SampleRect);
 		UE_LOG(LogTemp, Warning, TEXT("Writing data to texture %s"), (bSaved ? TEXT("finished with success") : TEXT("failed")));
-
+		
+		//Apply height to the landscape
 		FHeightmapAccessor<false> HeightmapAccessor(LandscapeInfo);
 		HeightmapAccessor.SetData(MinX, MinY, MaxX, MaxY, HeightData.GetData());
 
-		
+		//const FVector PreviousLocation = Landscape->GetActorLocation();
+		//Landscape->SetActorLocation(FVector(PreviousLocation.X, PreviousLocation.Y, PreviousLocation.Z * LANDSCAPE_ZSCALE));
 	}
 }
 
@@ -140,6 +145,12 @@ bool UTerrainComponent::WriteHeightDataToTexture(TArray<uint8> HeightData, FIntR
 
 	return UPackage::SavePackage(Package, NewTexture, *PackageFileName, SavePackageArgs);
 }
+
+void UTerrainComponent::ClampHeightValue(float& NoiseValue)
+{
+	
+}
+
 
 #if WITH_EDITOR
 void UTerrainComponent::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
