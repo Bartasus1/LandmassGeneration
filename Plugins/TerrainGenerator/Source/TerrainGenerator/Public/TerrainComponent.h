@@ -26,16 +26,16 @@ public:
 	UPROPERTY(EditAnywhere, AdvancedDisplay, meta=(EditCondition="!bUpdateOnValuesChanged"))
 	bool bWriteToLog = false;
 
-	UPROPERTY(EditAnywhere, meta=(UIMin = 0.1, UIMax = 10.0))
+	UPROPERTY(EditAnywhere, meta=(UIMin = 0.1, UIMax = 12.0))
 	float Frequency = 1.0;
 	
-	UPROPERTY(EditAnywhere, meta=(UIMin = 1.0, UIMax = 4.0, DisplayName = "Lacunarity / (1/Persistence)"))
-	float Persistence = 0.5;
+	UPROPERTY(EditAnywhere, meta=(UIMin = 1.0, UIMax = 5.0, DisplayName = "Lacunarity / (1/Persistence)"))
+	float Persistence = 2;
 
 	UPROPERTY(EditAnywhere, meta=(UIMin = 1, UIMax = 8))
 	uint16 Octaves = 1;
 
-	UPROPERTY(EditAnywhere, meta=(UIMin = 100, UIMax = 10000))
+	UPROPERTY(EditAnywhere, meta=(UIMin = 1000, UIMax = 20000))
 	uint32 Elevation = 8000;
 
 protected:
