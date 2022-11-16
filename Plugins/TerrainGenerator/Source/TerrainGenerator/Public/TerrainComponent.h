@@ -29,14 +29,14 @@ public:
 	UPROPERTY(EditAnywhere, meta=(UIMin = 0.1, UIMax = 12.0))
 	float Frequency = 1.0;
 	
-	UPROPERTY(EditAnywhere, meta=(UIMin = 1.0, UIMax = 5.0, DisplayName = "Lacunarity / (1/Persistence)"))
+	UPROPERTY(EditAnywhere, meta=(UIMin = 0.1, UIMax = 8.0, DisplayName = "Lacunarity (1 / Persistence)"))
 	float Persistence = 2;
 
-	UPROPERTY(EditAnywhere, meta=(UIMin = 1, UIMax = 8))
+	UPROPERTY(EditAnywhere, meta=(UIMin = 1, UIMax = 16))
 	uint16 Octaves = 1;
 
-	UPROPERTY(EditAnywhere, meta=(UIMin = 1000, UIMax = 20000))
-	uint32 Elevation = 8000;
+	UPROPERTY(EditAnywhere, meta=(UIMin = 1, UIMax = 65536))
+	uint32 Elevation = SHRT_MAX;
 
 protected:
 	// Called when the game starts
