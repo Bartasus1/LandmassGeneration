@@ -26,6 +26,9 @@ public:
 	UPROPERTY(EditAnywhere, AdvancedDisplay, meta=(EditCondition="!bUpdateOnValuesChanged"))
 	bool bWriteToLog = false;
 
+	UPROPERTY(EditAnywhere, meta=(UIMin = 1, UIMax = 65536))
+	uint32 Seed = 1;
+
 	UPROPERTY(EditAnywhere, meta=(UIMin = 0.1, UIMax = 12.0))
 	float Frequency = 1.0;
 	
@@ -37,6 +40,13 @@ public:
 
 	UPROPERTY(EditAnywhere, meta=(UIMin = 1, UIMax = 65536))
 	uint32 Elevation = SHRT_MAX;
+
+	
+	UPROPERTY(EditAnywhere, meta=(InlineEditConditionToggle))
+	bool bUseCurves = false;
+
+	UPROPERTY(EditAnywhere, meta=(EditCondition="bUseCurves"))
+	UCurveFloat* TerrainControlCurve;
 
 protected:
 	// Called when the game starts

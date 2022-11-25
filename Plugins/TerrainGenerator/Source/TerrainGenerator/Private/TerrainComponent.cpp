@@ -43,8 +43,8 @@ void UTerrainComponent::GenerateLandmass()
 		
 		ParallelFor(SampleRect.Width() * SampleRect.Height(), [&](int32 F)
 		{
-			int32 i = F % SampleRect.Width();
-			int32 j = F / SampleRect.Height();
+			int32 i = F % SampleRect.Width() + Seed;
+			int32 j = F / SampleRect.Height() + Seed;
 		
 			float X = i / static_cast<float>(SampleRect.Width());
 			float Y = j / static_cast<float>(SampleRect.Height());
@@ -67,7 +67,7 @@ void UTerrainComponent::GenerateLandmass()
 			if(bWriteToLog)
 				UE_LOG(LogTemp, Warning, TEXT("X: %f  |   Y: %f       | NoiseValue: %f	"), X, Y, (NoiseValue / AmplitudeSum));
 			
-			HeightData[F] =  FMath::Clamp(FMath::GetRangeValue(FFloatRange(0, Elevation + SHRT_MAX), (NoiseValue / AmplitudeSum)), 0, UINT16_MAX);
+			HeightData[F] = (bUseCurves && TerrainControlCurve) ? (TerrainControlCurve->GetFloatValue((NoiseValue / AmplitudeSum)) / 100.f) * (Elevation + SHRT_MAX) : FMath::Clamp((Elevation + SHRT_MAX) * (NoiseValue / AmplitudeSum), 0, UINT16_MAX);
 
 			FColor Color = FLinearColor::LerpUsingHSV(FLinearColor(FColor::Black),
 				FLinearColor(FColor::White), (NoiseValue / AmplitudeSum)).ToFColor(false);
@@ -147,7 +147,8 @@ void UTerrainComponent::PostEditChangeProperty(FPropertyChangedEvent& PropertyCh
 
 	if (PropertyChangedEvent.Property && bUpdateOnValuesChanged)
 	{
-		if (PropertyChangedEvent.Property->GetFName() == FName("Frequency")		||
+		if (PropertyChangedEvent.Property->GetFName() == FName("Seed")			||
+			PropertyChangedEvent.Property->GetFName() == FName("Frequency")		||
 			PropertyChangedEvent.Property->GetFName() == FName("Octaves")		||
 			PropertyChangedEvent.Property->GetFName() == FName("Persistence")	||
 			PropertyChangedEvent.Property->GetFName() == FName("Elevation")		)
