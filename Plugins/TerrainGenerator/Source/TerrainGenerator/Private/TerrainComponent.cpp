@@ -31,8 +31,7 @@ void UTerrainComponent::GenerateLandmass()
 		ULandscapeInfo* LandscapeInfo = Landscape->GetLandscapeInfo();
 
 		LandscapeInfo->GetLandscapeExtent(MinX, MinY, MaxX, MaxY);
-
-		FIntRect SampleRect = FIntRect(MinX, MinY, 1 + MaxX - MinX, 1 + MaxY - MinY);
+		FIntRect SampleRect = FIntRect(MinX, MinY, (MaxX - MinX) + 1, (MaxY - MinY) + 1);
 
 		TArray<uint16> HeightData;
 		TArray<uint8> Pixels;
