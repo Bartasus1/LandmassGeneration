@@ -66,10 +66,9 @@ void UTerrainComponent::GenerateLandmass()
 			if(bWriteToLog)
 				UE_LOG(LogTemp, Warning, TEXT("X: %f  |   Y: %f       | NoiseValue: %f	"), X, Y, (NoiseValue / AmplitudeSum));
 			
-			HeightData[F] = (bUseCurves && TerrainControlCurve) ? (TerrainControlCurve->GetFloatValue((NoiseValue / AmplitudeSum)) / 100.f) * (Elevation + SHRT_MAX) : FMath::Clamp((Elevation + SHRT_MAX) * (NoiseValue / AmplitudeSum), 0, UINT16_MAX);
+			HeightData[F] = (bUseCurves && TerrainControlCurve != nullptr) ? (TerrainControlCurve->GetFloatValue((NoiseValue / AmplitudeSum)) / 100.f) * (Elevation + SHRT_MAX) : FMath::Clamp((Elevation + SHRT_MAX) * (NoiseValue / AmplitudeSum), 0, UINT16_MAX);
 
-			FColor Color = FLinearColor::LerpUsingHSV(FLinearColor(FColor::Black),
-				FLinearColor(FColor::White), (NoiseValue / AmplitudeSum)).ToFColor(false);
+			const FColor Color = FLinearColor::LerpUsingHSV(FLinearColor(FColor::Black), FLinearColor(FColor::White), (NoiseValue / AmplitudeSum)).ToFColor(false);
 
 			Pixels[(F * 4) + 0] = Color.R;
 			Pixels[(F * 4) + 1] = Color.G;
@@ -99,9 +98,8 @@ bool UTerrainComponent::WriteHeightDataToTexture(TArray<uint8> HeightData, FIntR
 {
 	FString Path = "/TerrainGenerator/";
 	FString TextureName = "HeightMap";
-	Path += TextureName;
 
-	UPackage* Package = CreatePackage(*Path);
+	UPackage* Package = CreatePackage(*(Path + TextureName));
 	Package->FullyLoad();
 
 	UTexture2D* NewTexture = NewObject<UTexture2D>(Package, *TextureName, RF_Public | RF_Standalone | RF_MarkAsRootSet);
@@ -131,7 +129,7 @@ bool UTerrainComponent::WriteHeightDataToTexture(TArray<uint8> HeightData, FIntR
 
 	FString PackageFileName = FPackageName::LongPackageNameToFilename(Path, FPackageName::GetAssetPackageExtension());
 	FSavePackageArgs SavePackageArgs;
-	SavePackageArgs.SaveFlags = RF_Public | RF_Standalone;
+	SavePackageArgs.SaveFlags = RF_Public | RF_Standalone | RF_NeedLoad;
 	SavePackageArgs.Error = GError;
 	SavePackageArgs.bForceByteSwapping = true;
 	SavePackageArgs.bWarnOfLongFilename = SAVE_NoError;
