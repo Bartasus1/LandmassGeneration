@@ -4,9 +4,31 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "TerrainModifiers/TerrainModifier.h"
 #include "TerrainComponent.generated.h"
 
 class UMaterialInstance;
+
+USTRUCT()
+struct FTerrainWeights
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, meta=(ClampMin = 0.f, ClampMax = 1.f, Delta = 0.1))
+	float Weight = 1.f;
+
+	UPROPERTY(EditAnywhere, Instanced)
+	UTerrainModifier* TerrainModifier;
+	
+};
+
+UENUM()
+enum EUpdateBehaviour
+{
+	Interactive,
+	ValueSet
+};
+
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class TERRAINGENERATOR_API UTerrainComponent : public UActorComponent
@@ -23,36 +45,25 @@ public:
 	UPROPERTY(EditAnywhere)
 	bool bUpdateOnValuesChanged = false;
 
-	UPROPERTY(EditAnywhere, AdvancedDisplay, meta=(EditCondition="!bUpdateOnValuesChanged"))
-	bool bWriteToLog = false;
-
-	UPROPERTY(EditAnywhere, meta=(UIMin = 1, UIMax = 65536))
-	uint32 Seed = 1;
-
-	UPROPERTY(EditAnywhere, meta=(UIMin = 0.1, UIMax = 12.0))
-	float Frequency = 1.0;
-	
-	UPROPERTY(EditAnywhere, meta=(UIMin = 0.1, UIMax = 8.0, DisplayName = "Lacunarity (1 / Persistence)"))
-	float Persistence = 2;
-
-	UPROPERTY(EditAnywhere, meta=(UIMin = 1, UIMax = 16))
-	uint16 Octaves = 1;
-
-	UPROPERTY(EditAnywhere, meta=(UIMin = 1, UIMax = 65536))
-	uint32 Elevation = SHRT_MAX;
+	UPROPERTY(EditAnywhere, meta=(EditCondition="bUpdateOnValuesChanged"))
+	TEnumAsByte<EUpdateBehaviour> UpdateBehaviour = ValueSet;
 
 	
-	UPROPERTY(EditAnywhere, meta=(InlineEditConditionToggle))
-	bool bUseCurves = false;
-
-	UPROPERTY(EditAnywhere, meta=(EditCondition="bUseCurves"))
-	UCurveFloat* TerrainControlCurve;
+	
+	UPROPERTY(EditAnywhere,  meta=(ForceInlineRow, ShowOnlyInnerProperties))
+	TArray<FTerrainWeights> TerrainModifierWeights;
 
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
+	bool WriteHeightDataToTexture(TArray<uint8>& Data, FIntRect Rect, FString LandscapeActorName);
 
-	bool WriteHeightDataToTexture(TArray<uint8> HeightData, FIntRect SampleRect);
+
+	TArray<uint16> HeightData;
+	TArray<uint8> Pixels;
+	FIntRect SampleRect;
+	
+	virtual void OnRegister() override;
 
 #if WITH_EDITOR
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
