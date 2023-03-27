@@ -5,6 +5,8 @@
 #include "Landscape.h"
 #include "LandscapeEdit.h"
 #include "AssetRegistry/AssetRegistryModule.h"
+#include "Materials/MaterialParameterCollection.h"
+#include "Materials/MaterialParameterCollectionInstance.h"
 #include "UObject/SavePackage.h"
 
 // Sets default values for this component's properties
@@ -19,43 +21,48 @@ UTerrainComponent::UTerrainComponent()
 
 void UTerrainComponent::GenerateLandmass()
 {
-	check(GetWorld());
-
-	if (ALandscape* Landscape = Cast<ALandscape>(GetOwner()))
+	if(GetWorld())
 	{
-		ParallelFor(SampleRect.Width() * SampleRect.Height(), [&](int32 F)
+		if (ALandscape* Landscape = Cast<ALandscape>(GetOwner()))
 		{
-			for(FTerrainWeights TerrainWeight : TerrainModifierWeights)
+			ParallelFor(SampleRect.Width() * SampleRect.Height(), [&](int32 F)
 			{
-				UTerrainModifier* TerrainModifier = TerrainWeight.TerrainModifier;
+				for(FTerrainWeights TerrainWeight : TerrainModifierWeights)
+				{
+					UTerrainModifier* TerrainModifier = TerrainWeight.TerrainModifier;
 
 				
-				int32 i = F % SampleRect.Width() + TerrainModifier->Seed;
-				int32 j = F / SampleRect.Height() + TerrainModifier->Seed;
+					int32 i = F % SampleRect.Width() + TerrainModifier->Seed;
+					int32 j = F / SampleRect.Height() + TerrainModifier->Seed;
 				
-				float X = i / static_cast<float>(SampleRect.Width());
-				float Y = j / static_cast<float>(SampleRect.Height());
+					float X = i / static_cast<float>(SampleRect.Width());
+					float Y = j / static_cast<float>(SampleRect.Height());
 
 			
-				const float Height = TerrainModifier->GetTerrainHeightValue(X, Y) * TerrainWeight.Weight;
+					const float Height = TerrainModifier->GetTerrainHeightValue(X, Y) * TerrainWeight.Weight;
 				
-				HeightData[F] = FMath::Clamp((TerrainModifier->Elevation + SHRT_MAX) * Height, 0, UINT16_MAX);
-				const FColor Color = FLinearColor::LerpUsingHSV(FLinearColor(FColor::Black), FLinearColor(FColor::White), Height).ToFColor(false);
+					HeightData[F] = FMath::Clamp((TerrainModifier->Elevation * Height) + SHRT_MAX, 0, UINT16_MAX);
+					const FColor Color = FLinearColor::LerpUsingHSV(FLinearColor(FColor::Black), FLinearColor(FColor::White),(Height + 1) * 0.5).ToFColor(false);
 				
-				Pixels[(F * 4) + 0] = Color.R;
-				Pixels[(F * 4) + 1] = Color.G;
-				Pixels[(F * 4) + 2] = Color.B;
-				Pixels[(F * 4) + 3] = 255;
-			}
-		});
+					Pixels[(F * 4) + 0] = Color.R;
+					Pixels[(F * 4) + 1] = Color.G;
+					Pixels[(F * 4) + 2] = Color.B;
+					Pixels[(F * 4) + 3] = 255;
+				
+					MaxHeight = FMath::Max(MaxHeight, TerrainModifier->Elevation);
+				}
+			});
 
+			UMaterialParameterCollectionInstance* ParameterCollectionInstance = GetWorld()->GetParameterCollectionInstance(ParameterCollection);
+			ParameterCollectionInstance->SetScalarParameterValue("MaxHeight", MaxHeight);
 
-		//Save height to the texture
-		WriteHeightDataToTexture(Pixels, SampleRect, Landscape->GetActorNameOrLabel());
+			//Save height to the texture
+			WriteHeightDataToTexture(Pixels, SampleRect, Landscape->GetActorNameOrLabel());
 		
-		//Apply height to the landscape
-		FHeightmapAccessor<true> HeightmapAccessor(Landscape->GetLandscapeInfo());
-		HeightmapAccessor.SetData(SampleRect.Min.X, SampleRect.Min.Y, SampleRect.Width() - 1, SampleRect.Height() - 1, HeightData.GetData());
+			//Apply height to the landscape
+			FHeightmapAccessor<true> HeightmapAccessor(Landscape->GetLandscapeInfo());
+			HeightmapAccessor.SetData(SampleRect.Min.X, SampleRect.Min.Y, SampleRect.Width() - 1, SampleRect.Height() - 1, HeightData.GetData());
+		}
 	}
 }
 
@@ -65,6 +72,7 @@ void UTerrainComponent::BeginPlay()
 	Super::BeginPlay();
 
 	// ...
+	GenerateLandmass();
 }
 
 bool UTerrainComponent::WriteHeightDataToTexture(TArray<uint8>& Data, FIntRect Rect, FString LandscapeActorName)

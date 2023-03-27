@@ -7,5 +7,5 @@ float UCurveModifier::GetTerrainHeightValue_Implementation(float X, float Y)
 {
 	float Height = Super::GetTerrainHeightValue_Implementation(X, Y); //Perlin Noise
 	
-	return (TerrainControlCurve != nullptr) ? TerrainControlCurve->GetFloatValue(Height / 100.f) : Height;
+	return (TerrainControlCurve != nullptr) ? TerrainControlCurve->GetFloatValue(Height) : Height;
 }
