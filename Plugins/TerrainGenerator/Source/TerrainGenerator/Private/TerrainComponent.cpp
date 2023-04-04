@@ -5,7 +5,6 @@
 #include "Landscape.h"
 #include "LandscapeEdit.h"
 #include "AssetRegistry/AssetRegistryModule.h"
-#include "Materials/MaterialParameterCollection.h"
 #include "Materials/MaterialParameterCollectionInstance.h"
 #include "UObject/SavePackage.h"
 
@@ -72,7 +71,6 @@ void UTerrainComponent::BeginPlay()
 	Super::BeginPlay();
 
 	// ...
-	GenerateLandmass();
 }
 
 bool UTerrainComponent::WriteHeightDataToTexture(TArray<uint8>& Data, FIntRect Rect, FString LandscapeActorName)
@@ -132,6 +130,8 @@ void UTerrainComponent::OnRegister()
 		
 		HeightData.Init(0, SampleRect.Width() * SampleRect.Height());
 		Pixels.Init(0, SampleRect.Width() * SampleRect.Height() * 4);
+
+		GenerateLandmass();
 	}
 }
 
