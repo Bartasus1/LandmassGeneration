@@ -45,6 +45,9 @@ public:
 	UPROPERTY(EditAnywhere)
 	bool bUpdateOnValuesChanged = false;
 
+	UPROPERTY(EditAnywhere)
+	bool bGenerateAdditionalHeightmap = false;
+
 	UPROPERTY(EditAnywhere, meta=(EditCondition="bUpdateOnValuesChanged"))
 	TEnumAsByte<EUpdateBehaviour> UpdateBehaviour = ValueSet;
 	
@@ -64,7 +67,7 @@ protected:
 	TArray<uint8> Pixels;
 	FIntRect SampleRect;
 	
-	uint32 MaxHeight;
+	int32 MaxHeight;
 
 	
 	virtual void OnRegister() override;

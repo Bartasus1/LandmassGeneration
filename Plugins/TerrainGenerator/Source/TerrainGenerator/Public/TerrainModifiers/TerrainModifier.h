@@ -21,7 +21,7 @@ public:
 	uint32 Seed = 0;
 	
 	UPROPERTY(EditAnywhere, meta=(UIMin = 1, UIMax = 65536, Delta = 100.f))
-	uint32 Elevation = SHRT_MAX;
+	int32 Elevation = SHRT_MAX;
 
 	UFUNCTION(BlueprintNativeEvent)
 	float GetTerrainHeightValue(float X, float Y);
