@@ -79,6 +79,8 @@ void UTerrainComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
+
+    GenerateLandmass();
 	// ...
 }
 
@@ -146,7 +148,7 @@ void UTerrainComponent::OnRegister()
 		Pixels.Init(0, SampleRect.Width() * SampleRect.Height() * 4);
 
 		UE_LOG(LogTemp, Warning, TEXT("COMPONENT REGISTERED !!!"));
-		UE_LOG(LogTemp, Warning, TEXT("COMPONENT SIZE: \n\tWIDTH: %d \n\tHEIGHT: %d"), SampleRect.Width(), SampleRect.Height());
+		UE_LOG(LogTemp, Warning, TEXT("LANSCAPE SIZE: \n\tWIDTH: %d \n\tHEIGHT: %d"), SampleRect.Width(), SampleRect.Height());
 
 		static bool FirstTime = true;
 		if(FirstTime) // prevent firing OnRegister() in PostEditChangeProperty() - we only want to call it at engine start
