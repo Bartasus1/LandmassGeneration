@@ -31,15 +31,15 @@ void UTerrainComponent::GenerateLandmass()
 		{
 			HeightData[F] = SHRT_MAX;
 			
-			for(FTerrainWeights TerrainWeight : TerrainModifierWeights)
+			for(FWeightedTerrainModifier TerrainWeight : TerrainModifierWeights)
 			{
 				if(UTerrainModifier* TerrainModifier = TerrainWeight.TerrainModifier)
 				{
-					int32 i = F % SampleRect.Width() + TerrainModifier->Seed;
-					int32 j = F / SampleRect.Height() + TerrainModifier->Seed;
+					int32 i = F % SampleRect.Width();
+					int32 j = F / SampleRect.Height();
 				
-					float X = i / static_cast<float>(SampleRect.Width());
-					float Y = j / static_cast<float>(SampleRect.Height());
+					float X = (i + TerrainModifier->XOffset) / static_cast<float>(SampleRect.Width());
+					float Y = (j + TerrainModifier->YOffset) / static_cast<float>(SampleRect.Height());
 
 			
 					const float Height = TerrainModifier->GetTerrainHeightValue(X, Y) * TerrainWeight.Weight;
@@ -78,6 +78,24 @@ void UTerrainComponent::GenerateLandmass()
 		HeightmapAccessor.SetData(SampleRect.Min.X, SampleRect.Min.Y, SampleRect.Width() - 1, SampleRect.Height() - 1, HeightData.GetData());
 	}
 	
+}
+
+void UTerrainComponent::RegenerateLandscapeInfo()
+{
+	if (ALandscape* Landscape = Cast<ALandscape>(GetOwner()))
+	{
+		int32 MinX, MinY, MaxX, MaxY;
+		ULandscapeInfo* LandscapeInfo = Landscape->GetLandscapeInfo();
+
+		LandscapeInfo->GetLandscapeExtent(MinX, MinY, MaxX, MaxY);
+		SampleRect = FIntRect(MinX, MinY, (MaxX - MinX) + 1, (MaxY - MinY) + 1);
+		
+		HeightData.Init(0, SampleRect.Width() * SampleRect.Height());
+		Pixels.Init(0, SampleRect.Width() * SampleRect.Height() * 4);
+
+		UE_LOG(LogTemp, Warning, TEXT("COMPONENT REGISTERED !!!"));
+		UE_LOG(LogTemp, Warning, TEXT("LANSCAPE SIZE: \n\tWIDTH: %d \n\tHEIGHT: %d"), SampleRect.Width(), SampleRect.Height());
+	}
 }
 
 // Called when the game starts
@@ -138,28 +156,16 @@ bool UTerrainComponent::WriteHeightDataToTexture(TArray<uint8>& Data, FIntRect R
 void UTerrainComponent::OnRegister()
 {
 	Super::OnRegister();
-	
-	if (ALandscape* Landscape = Cast<ALandscape>(GetOwner()))
+
+	RegenerateLandscapeInfo();
+
+	static bool FirstTime = true;
+	if(FirstTime) // prevent firing OnRegister() in PostEditChangeProperty() - we only want to call it at engine start
 	{
-		int32 MinX, MinY, MaxX, MaxY;
-		ULandscapeInfo* LandscapeInfo = Landscape->GetLandscapeInfo();
-
-		LandscapeInfo->GetLandscapeExtent(MinX, MinY, MaxX, MaxY);
-		SampleRect = FIntRect(MinX, MinY, (MaxX - MinX) + 1, (MaxY - MinY) + 1);
-		
-		HeightData.Init(0, SampleRect.Width() * SampleRect.Height());
-		Pixels.Init(0, SampleRect.Width() * SampleRect.Height() * 4);
-
-		UE_LOG(LogTemp, Warning, TEXT("COMPONENT REGISTERED !!!"));
-		UE_LOG(LogTemp, Warning, TEXT("LANSCAPE SIZE: \n\tWIDTH: %d \n\tHEIGHT: %d"), SampleRect.Width(), SampleRect.Height());
-
-		static bool FirstTime = true;
-		if(FirstTime) // prevent firing OnRegister() in PostEditChangeProperty() - we only want to call it at engine start
-		{
-			GenerateLandmass();
-			FirstTime = false;
-		}
+		GenerateLandmass();
+		FirstTime = false;
 	}
+
 }
 
 
@@ -167,6 +173,11 @@ void UTerrainComponent::OnRegister()
 void UTerrainComponent::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
+
+	if(UpdateBehaviour == None)
+	{
+		return;
+	}
 	
 	EPropertyChangeType::Type ChangeBehaviour = EPropertyChangeType::ValueSet;
 	
@@ -175,7 +186,7 @@ void UTerrainComponent::PostEditChangeProperty(FPropertyChangedEvent& PropertyCh
 		ChangeBehaviour = EPropertyChangeType::Interactive;
 	}
 	
-	if (bUpdateOnValuesChanged && PropertyChangedEvent.ChangeType == ChangeBehaviour)
+	if (PropertyChangedEvent.ChangeType == ChangeBehaviour)
 	{
 		GenerateLandmass();
 	}

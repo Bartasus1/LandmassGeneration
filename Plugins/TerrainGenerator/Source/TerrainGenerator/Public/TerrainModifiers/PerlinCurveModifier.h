@@ -4,13 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "PerlinNoiseModifier.h"
-#include "CurveModifier.generated.h"
+#include "PerlinCurveModifier.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class TERRAINGENERATOR_API UCurveModifier : public UPerlinNoiseModifier
+class TERRAINGENERATOR_API UPerlinCurveModifier : public UPerlinNoiseModifier
 {
 	GENERATED_BODY()
 public:

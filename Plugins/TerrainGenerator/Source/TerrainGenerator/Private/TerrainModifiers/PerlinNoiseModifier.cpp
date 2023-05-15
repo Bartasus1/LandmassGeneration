@@ -5,11 +5,9 @@
 
 float UPerlinNoiseModifier::GetTerrainHeightValue_Implementation(float X, float Y)
 {
-	
 	float NoiseValue = 0;
 	float AmplitudeSum = 0;
-			
-			
+	
 	for (int k = 0; k < Octaves; k++)
 	{
 		const float Multiplier =  FMath::Pow(Persistence, k);

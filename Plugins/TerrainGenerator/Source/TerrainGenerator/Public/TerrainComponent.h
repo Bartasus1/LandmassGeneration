@@ -10,7 +10,7 @@
 class UMaterialInstance;
 
 USTRUCT()
-struct FTerrainWeights
+struct FWeightedTerrainModifier
 {
 	GENERATED_BODY()
 
@@ -25,6 +25,7 @@ struct FTerrainWeights
 UENUM()
 enum EUpdateBehaviour
 {
+	None,
 	Interactive,
 	ValueSet
 };
@@ -42,17 +43,17 @@ public:
 	UFUNCTION(CallInEditor)
 	void GenerateLandmass();
 
-	UPROPERTY(EditAnywhere)
-	bool bUpdateOnValuesChanged = false;
+	UFUNCTION(CallInEditor)
+	void RegenerateLandscapeInfo();
 
 	UPROPERTY(EditAnywhere)
 	bool bGenerateAdditionalHeightmap = false;
 
-	UPROPERTY(EditAnywhere, meta=(EditCondition="bUpdateOnValuesChanged"))
+	UPROPERTY(EditAnywhere)
 	TEnumAsByte<EUpdateBehaviour> UpdateBehaviour = ValueSet;
 	
 	UPROPERTY(EditAnywhere,  meta=(ForceInlineRow))
-	TArray<FTerrainWeights> TerrainModifierWeights;
+	TArray<FWeightedTerrainModifier> TerrainModifierWeights;
 
 	UPROPERTY(EditAnywhere);
 	TObjectPtr<UMaterialParameterCollection> ParameterCollection;

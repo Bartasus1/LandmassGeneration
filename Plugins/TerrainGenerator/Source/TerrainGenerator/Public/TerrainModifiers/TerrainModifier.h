@@ -17,8 +17,11 @@ class TERRAINGENERATOR_API UTerrainModifier : public UObject
 
 public:
 
-	UPROPERTY(EditAnywhere, meta=(UIMin = 0, UIMax = 65535, Delta = 5.f))
-	uint32 Seed = 0;
+	UPROPERTY(EditAnywhere, meta=(UIMin = 0, UIMax = 65535, Delta = 50.f))
+	uint32 XOffset = 0;
+
+	UPROPERTY(EditAnywhere, meta=(UIMin = 0, UIMax = 65535, Delta = 50.f))
+	uint32 YOffset = 0;
 	
 	UPROPERTY(EditAnywhere, meta=(UIMin = 1, UIMax = 65536, Delta = 100.f))
 	int32 Elevation = SHRT_MAX;

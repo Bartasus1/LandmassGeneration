@@ -1,6 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "TerrainGenerator.h"
+#include "TerrainGeneratorModule.h"
 
 #define LOCTEXT_NAMESPACE "FTerrainGeneratorModule"
 
