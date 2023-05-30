@@ -48,7 +48,7 @@ void UTerrainComponent::GenerateLandmass()
 
 					if(bGenerateAdditionalHeightmap)
 					{
-						const FColor Color = FLinearColor::LerpUsingHSV(FLinearColor(FColor::Black), FLinearColor(FColor::White),(Height + 1) * 0.5).ToFColor(false);
+						const FColor Color = FLinearColor::LerpUsingHSV(FLinearColor(FColor::Black), FLinearColor(FColor::White), (float)HeightData[F] / UINT16_MAX).ToFColor(false);
 				
 						Pixels[(F * 4) + 0] = Color.R;
 						Pixels[(F * 4) + 1] = Color.G;
