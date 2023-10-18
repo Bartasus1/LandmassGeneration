@@ -52,11 +52,11 @@ public:
 	UPROPERTY(EditAnywhere)
 	TEnumAsByte<EUpdateBehaviour> UpdateBehaviour = ValueSet;
 	
-	UPROPERTY(EditAnywhere,  meta=(ForceInlineRow))
-	TArray<FWeightedTerrainModifier> TerrainModifierWeights;
+	UPROPERTY(EditAnywhere)
+	TArray<FWeightedTerrainModifier> TerrainModifiers;
 
 	UPROPERTY(EditAnywhere);
-	TObjectPtr<UMaterialParameterCollection> ParameterCollection;
+	TObjectPtr<UMaterialParameterCollection> ParameterCollection = nullptr;
 
 protected:
 	// Called when the game starts
@@ -68,7 +68,7 @@ protected:
 	TArray<uint8> Pixels;
 	FIntRect SampleRect;
 	
-	int32 MaxHeight;
+	int32 MaxHeight = 0;
 
 	
 	virtual void OnRegister() override;

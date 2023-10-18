@@ -3,6 +3,7 @@
 
 #include "TerrainComponent.h"
 #include "Landscape.h"
+#include "LandscapeDataAccess.h"
 #include "LandscapeEdit.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "Materials/MaterialParameterCollectionInstance.h"
@@ -27,11 +28,13 @@ void UTerrainComponent::GenerateLandmass()
 	
 	if (ALandscape* Landscape = Cast<ALandscape>(GetOwner()))
 	{
+		MaxHeight = 0;
+		
 		ParallelFor(SampleRect.Width() * SampleRect.Height(), [&](int32 F)
 		{
 			HeightData[F] = SHRT_MAX;
 			
-			for(FWeightedTerrainModifier TerrainWeight : TerrainModifierWeights)
+			for(const FWeightedTerrainModifier TerrainWeight : TerrainModifiers)
 			{
 				if(UTerrainModifier* TerrainModifier = TerrainWeight.TerrainModifier)
 				{
@@ -56,11 +59,13 @@ void UTerrainComponent::GenerateLandmass()
 						Pixels[(F * 4) + 3] = 255;
 					}
 				
-					MaxHeight = FMath::Max(MaxHeight, TerrainModifier->Elevation);
+					MaxHeight = FMath::Max(MaxHeight, static_cast<int32>(HeightData[F]));
 				}
 			}
 		});
 
+		MaxHeight = (LANDSCAPE_ZSCALE * Landscape->GetActorScale3D().Z * MaxHeight) / 2;
+		
 		if(ParameterCollection)
 		{
 			UMaterialParameterCollectionInstance* ParameterCollectionInstance = GetWorld()->GetParameterCollectionInstance(ParameterCollection);
